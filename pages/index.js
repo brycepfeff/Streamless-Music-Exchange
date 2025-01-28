@@ -1,12 +1,13 @@
-// pages/index.js
+/** pages/index.js */
 import React from 'react';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Streamless Music Exchange</h1>
-      <WalletMultiButton />
+    <div className="text-center">
+      <h1 className="text-4xl font-bold text-black">Welcome to Streamless Music Exchange</h1>
+      <p className="mt-4 text-lg text-black">
+        This is the homepage. Use the Navbar to navigate to Swap, Music, or Mint.
+      </p>
     </div>
   );
 }
