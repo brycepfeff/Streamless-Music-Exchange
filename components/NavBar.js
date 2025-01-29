@@ -14,19 +14,17 @@ export default function NavBar() {
   return (
     <nav className="w-full bg-secondary text-white relative z-[999]">
       <div className="relative flex items-center w-full px-4 py-10 md:px-12 md:py-8">
-        
-        {/*
-          Mobile Hamburger
-          - px-4 py-3 => bigger area
-          - rounded-lg => slightly more rounded corners
-          - isOpen => stays highlighted, else => hover highlight
-        */}
+        {/* Mobile Hamburger */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className={`
             block md:hidden focus:outline-none ml-2 mr-2
             px-4 py-3 rounded-lg transition-colors
-            ${isOpen ? 'bg-[#1c243e]' : 'hover:bg-[#1c243e]'}
+            ${
+              isOpen
+                ? 'bg-[#2c2d30] text-white'
+                : 'hover:bg-[#2c2d30] hover:text-white'
+            }
           `}
         >
           <div className="space-y-1">
@@ -92,8 +90,8 @@ export default function NavBar() {
 
           <WalletMultiButtonDynamic
             className="
-              bg-white text-secondary 
-              px-3 py-2 
+              bg-white text-secondary
+              px-3 py-2
               rounded-md font-semibold
               whitespace-nowrap
               min-w-[130px]
@@ -102,39 +100,46 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* Mobile Dropdown => same dark background (#1c243e) like swap card */}
+      {/*
+        Mobile Dropdown => #2c2d30 background, text-white, 
+        closes after selection => onClick={() => setIsOpen(false)}
+      */}
       <div
         className={`
           absolute top-full left-0 w-full
-          bg-[#1c243e] text-white
-          transition-all duration-300 overflow-hidden
           md:hidden
-          ${isOpen ? 'max-h-screen p-2 pb-3' : 'max-h-0 p-0'}
+          transition-all duration-300 overflow-hidden
+          rounded-lg
+          ${
+            isOpen
+              ? 'bg-[#2c2d30] text-white max-h-screen p-2 pb-3'
+              : 'max-h-0 p-0'
+          }
         `}
       >
         <ul className="flex flex-col space-y-2 ml-2">
-          <li>
+          <li onClick={() => setIsOpen(false)}>
             <Link href="/">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Home
               </span>
             </Link>
           </li>
-          <li>
+          <li onClick={() => setIsOpen(false)}>
             <Link href="/swap">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Swap
               </span>
             </Link>
           </li>
-          <li>
+          <li onClick={() => setIsOpen(false)}>
             <Link href="/music">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Music
               </span>
             </Link>
           </li>
-          <li>
+          <li onClick={() => setIsOpen(false)}>
             <Link href="/mint">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Mint
