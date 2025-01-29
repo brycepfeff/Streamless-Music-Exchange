@@ -27,8 +27,9 @@ export default function SwapPage() {
 
   const [defaultApi, setDefaultApi] = useState(null);
 
+  // Default now empty instead of '1'
   const [inputMint, setInputMint] = useState(USDC_MINT);
-  const [inputAmount, setInputAmount] = useState('1');
+  const [inputAmount, setInputAmount] = useState(''); // start empty
 
   const [outputMint, setOutputMint] = useState(SOL_MINT);
   const [outputAmount, setOutputAmount] = useState('');
@@ -223,11 +224,15 @@ export default function SwapPage() {
     getSymbol(t.address).toLowerCase().includes(outputSearch.toLowerCase())
   );
 
-  // -----------------------------------------------------------
-  //                  NEW LAYOUT (NOT FIXED)
-  // -----------------------------------------------------------
   return (
-    <div className="relative z-50 w-full max-w-[400px] mx-auto my-8">
+    /*
+      max-w-[400px] → caps the swap box at 400px
+      w-full → can shrink below 400px if necessary
+      mx-auto → center horizontally
+      my-8 → vertical spacing
+      px-4 sm:px-0 → more margin on smallest screens, removed at sm+ 
+    */
+    <div className="relative z-50 max-w-[400px] w-full mx-auto my-8 px-4 sm:px-0">
       <div
         className="bg-white rounded-2xl p-4 flex flex-col text-center relative"
         style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}

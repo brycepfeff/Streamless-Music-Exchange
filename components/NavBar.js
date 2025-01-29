@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import dynamic from 'next/dynamic';
 
-// Dynamically load the Solana wallet button for desktop
+// Dynamically load the Solana wallet button
 const WalletMultiButtonDynamic = dynamic(
   () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
   { ssr: false }
@@ -17,14 +18,9 @@ export default function NavBar() {
   return (
     <>
       <nav className="w-full bg-secondary text-white relative z-[999]">
-        {/*
-          Outer container: 
-          Mobile < md => px-4 py-6
-          Desktop ≥ md => px-8 py-8
-          position: relative so we can absolutely center the mobile brand
-        */}
+        {/* Outer container for the nav content */}
         <div className="relative flex items-center w-full px-4 py-6 md:px-8 md:py-8">
-
+          
           {/* Hamburger (Mobile Only) */}
           <button
             aria-label="Toggle Menu"
@@ -39,31 +35,39 @@ export default function NavBar() {
           </button>
 
           {/*
-            Mobile Brand 
-            - Absolutely centered 
-            - Hidden on desktop 
-            - whitespace-nowrap → prevents the text from wrapping
+            MOBILE LOGO (absolutely centered, hidden on desktop)
+            - Bumped from 120×40 → 180×60
           */}
           <div
             className="
               block md:hidden
               absolute left-1/2 top-1/2 transform 
               -translate-x-1/2 -translate-y-1/2
-              text-xl font-bold
-              text-center
-              whitespace-nowrap
             "
-            style={{ padding: 0, margin: 0 }}
           >
-            Streamless Music Exchange
+            <Image
+              src="/logo.png"
+              alt="Streamless Logo"
+              width={180} 
+              height={60} 
+              priority
+            />
           </div>
 
-          {/* Desktop Brand (hidden on mobile) */}
-          <div className="hidden md:block text-xl font-bold">
-            Streamless Music Exchange
+          {/*
+            DESKTOP LOGO (hidden on mobile, normal flow)
+            - Bumped from 140×50 → 210×75
+          */}
+          <div className="hidden md:block">
+            <Image
+              src="/logo.png"
+              alt="Streamless Logo"
+              width={210}
+              height={75}
+            />
           </div>
 
-          {/* Desktop Nav Links + Wallet (to the right) */}
+          {/* Desktop Nav Links + Wallet (on the right) */}
           <div className="hidden md:flex items-center space-x-4 ml-auto">
             <Link href="/" legacyBehavior>
               <span
@@ -103,11 +107,7 @@ export default function NavBar() {
           </div>
         </div>
 
-        {/*
-          MOBILE DROPDOWN
-          Absolutely placed below nav
-          Expands/collapses via max-height
-        */}
+        {/* MOBILE DROPDOWN */}
         <div
           className={`
             absolute top-full left-0 w-full
