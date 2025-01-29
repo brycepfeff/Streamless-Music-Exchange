@@ -14,10 +14,20 @@ export default function NavBar() {
   return (
     <nav className="w-full bg-secondary text-white relative z-[999]">
       <div className="relative flex items-center w-full px-4 py-10 md:px-12 md:py-8">
-        {/* Hamburger (Mobile Only) */}
+        
+        {/*
+          Mobile Hamburger
+          - px-4 py-3 => bigger area
+          - rounded-lg => slightly more rounded corners
+          - isOpen => stays highlighted, else => hover highlight
+        */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="block md:hidden focus:outline-none ml-2 mr-2"
+          className={`
+            block md:hidden focus:outline-none ml-2 mr-2
+            px-4 py-3 rounded-lg transition-colors
+            ${isOpen ? 'bg-[#1c243e]' : 'hover:bg-[#1c243e]'}
+          `}
         >
           <div className="space-y-1">
             <span className="block w-6 h-0.5 bg-white"></span>
@@ -80,10 +90,6 @@ export default function NavBar() {
             </span>
           </Link>
 
-          {/* 
-            Force single line: 'whitespace-nowrap'
-            and ensure minimum width so text never wraps
-          */}
           <WalletMultiButtonDynamic
             className="
               bg-white text-secondary 
@@ -96,11 +102,12 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
+      {/* Mobile Dropdown => same dark background (#1c243e) like swap card */}
       <div
         className={`
           absolute top-full left-0 w-full
-          bg-secondary text-white transition-all duration-300 overflow-hidden
+          bg-[#1c243e] text-white
+          transition-all duration-300 overflow-hidden
           md:hidden
           ${isOpen ? 'max-h-screen p-2 pb-3' : 'max-h-0 p-0'}
         `}
