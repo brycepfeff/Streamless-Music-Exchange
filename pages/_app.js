@@ -31,7 +31,7 @@ function MyApp({ Component, pageProps }) {
               <Component {...pageProps} />
             </main>
             <footer className="bg-primary text-white p-4 text-center">
-              Streamless Music Exchange © 2025
+              Streamless Music © 2025
             </footer>
           </div>
         </WalletModalProvider>

@@ -27,14 +27,12 @@ export default function SwapPage() {
 
   const [defaultApi, setDefaultApi] = useState(null);
 
-  // Default now empty instead of '1'
   const [inputMint, setInputMint] = useState(USDC_MINT);
-  const [inputAmount, setInputAmount] = useState(''); // start empty
-
+  const [inputAmount, setInputAmount] = useState('');
   const [outputMint, setOutputMint] = useState(SOL_MINT);
   const [outputAmount, setOutputAmount] = useState('');
 
-  // UI states for searching & dropdown
+  // Searching + dropdown
   const [inputSearch, setInputSearch] = useState('');
   const [showInputDropdown, setShowInputDropdown] = useState(false);
 
@@ -43,13 +41,13 @@ export default function SwapPage() {
 
   const [loading, setLoading] = useState(false);
 
-  // aggregator => mainnet
   useEffect(() => {
     const config = new Configuration({ basePath: 'https://quote-api.jup.ag' });
     const api = new DefaultApi(config);
     setDefaultApi(api);
   }, []);
 
+  // Quoting logic
   const doQuote = useCallback(
     async (inMint, outMint, rawAmt, mode) => {
       if (!defaultApi || !rawAmt || !inMint || !outMint) return null;
@@ -72,7 +70,6 @@ export default function SwapPage() {
         if (!quoteResp || !quoteResp.routes || quoteResp.routes.length === 0) {
           return null;
         }
-
         const best = quoteResp.routes[0];
         if (mode === 'ExactIn' && best.outAmount) {
           return (best.outAmount / 1e9).toString();
@@ -89,7 +86,6 @@ export default function SwapPage() {
     [defaultApi]
   );
 
-  // "You Pay" => ExactIn
   const onInputAmountChange = useCallback(
     async (val) => {
       setInputAmount(val);
@@ -100,7 +96,6 @@ export default function SwapPage() {
     [doQuote, inputMint, outputMint]
   );
 
-  // "You Receive" => ExactOut
   const onOutputAmountChange = useCallback(
     async (val) => {
       setOutputAmount(val);
@@ -111,7 +106,6 @@ export default function SwapPage() {
     [doQuote, inputMint, outputMint]
   );
 
-  // aggregator swap => real on-chain
   const doSwap = useCallback(async () => {
     if (!inputMint || !outputMint) {
       alert('Pick input + output tokens');
@@ -177,7 +171,7 @@ export default function SwapPage() {
     sendTransaction
   ]);
 
-  // auto refresh => exactIn
+  // Auto refresh => exactIn
   useEffect(() => {
     const timer = setInterval(() => {
       if (!inputAmount && !outputAmount) return;
@@ -186,21 +180,19 @@ export default function SwapPage() {
     return () => clearInterval(timer);
   }, [onInputAmountChange, inputAmount, outputAmount]);
 
+  // Helpers
   const truncated = (s) => {
     if (!s) return '';
     if (s.length <= 10) return s;
     return s.slice(0, 6) + '...' + s.slice(-4);
   };
-
   const getSymbol = (addr) => {
-    if (addr === SOL_MINT) return 'SOL';
+    if (addr === SOL_MINT)  return 'SOL';
     if (addr === USDC_MINT) return 'USDC';
     return '???';
   };
-
   const getLogo = () => FALLBACK_LOGO;
 
-  // Flip logic => re-quote
   const flipTokens = useCallback(async () => {
     const oldIn = inputMint;
     const oldOut = outputMint;
@@ -215,26 +207,10 @@ export default function SwapPage() {
     await onInputAmountChange(oldOutAmt);
   }, [inputMint, outputMint, inputAmount, outputAmount, onInputAmountChange]);
 
-  // Filter => input tokens
-  const displayedInputTokens = LOCAL_TOKENS.filter((t) =>
-    getSymbol(t.address).toLowerCase().includes(inputSearch.toLowerCase())
-  );
-  // Filter => output tokens
-  const displayedOutputTokens = LOCAL_TOKENS.filter((t) =>
-    getSymbol(t.address).toLowerCase().includes(outputSearch.toLowerCase())
-  );
-
   return (
-    /*
-      max-w-[400px] → caps the swap box at 400px
-      w-full → can shrink below 400px if necessary
-      mx-auto → center horizontally
-      my-8 → vertical spacing
-      px-4 sm:px-0 → more margin on smallest screens, removed at sm+ 
-    */
-    <div className="relative z-50 max-w-[400px] w-full mx-auto my-8 px-4 sm:px-0">
+    <div className="relative z-50 max-w-[400px] w-full mx-auto my-8 px-4 sm:px-0 text-white">
       <div
-        className="bg-white rounded-2xl p-4 flex flex-col text-center relative"
+        className="bg-[#1c243e] rounded-2xl pt-8 px-6 pb-10 flex flex-col text-center relative"
         style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
       >
         <h2 className="text-2xl font-bold mb-3">Token Swap</h2>
@@ -243,12 +219,13 @@ export default function SwapPage() {
           <WalletMultiButtonDynamic />
         </div>
 
-        {/* "You Pay" => ExactIn */}
-        <div className="text-left font-semibold text-gray-700 mb-1">You Pay</div>
-        <div className="flex mb-3">
-          <div className="relative flex items-center border rounded-xl w-full overflow-hidden">
+        {/* "You Pay" */}
+        <div className="text-left font-semibold mb-2">You Pay</div>
+        <div className="flex mb-0">
+          <div className="relative flex items-center border-2 border-gray-500 rounded-xl w-full overflow-hidden">
             <input
-              className="p-2 w-full outline-none border-none"
+              type="text"
+              className="appearance-none p-3 px-4 w-full outline-none border-none bg-transparent placeholder-gray-400"
               placeholder="Select Token"
               value={inputSearch}
               onChange={(e) => setInputSearch(e.target.value)}
@@ -256,26 +233,27 @@ export default function SwapPage() {
             />
             <input
               type="number"
-              className="p-2 w-[100px] text-right outline-none border-none"
+              className="appearance-none p-3 px-4 w-[100px] text-right outline-none border-none bg-transparent placeholder-gray-400"
               placeholder="0.00"
               value={inputAmount}
               onChange={(e) => onInputAmountChange(e.target.value)}
             />
             {showInputDropdown && (
               <div
-                className="absolute z-50 bg-white border w-full max-h-36 overflow-auto top-full left-0"
+                className="absolute z-50 bg-[#1c243e] border-2 border-gray-500 w-full max-h-36 overflow-auto top-full left-0"
                 style={{ marginTop: '2px' }}
-                onMouseDown={(e) => e.preventDefault()}
+                onMouseDown={(ee) => ee.preventDefault()}
               >
-                {displayedInputTokens.map((t) => {
+                {LOCAL_TOKENS.filter((t) =>
+                  getSymbol(t.address).toLowerCase().includes(inputSearch.toLowerCase())
+                ).map((t) => {
                   const sym = getSymbol(t.address);
                   const label = truncated(sym);
                   const logo = getLogo();
-
                   return (
                     <div
                       key={t.address}
-                      className="p-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
+                      className="p-2 hover:bg-[#29304e] cursor-pointer flex items-center space-x-2"
                       onMouseDown={() => {
                         setInputSearch(label);
                         setInputMint(t.address);
@@ -298,20 +276,22 @@ export default function SwapPage() {
           </div>
         </div>
 
-        {/* Flip button */}
-        <div className="flex justify-center items-center mb-3">
+        {/*
+          Flip => my-4 => half as far from “You Pay” as when it was my-8
+        */}
+        <div className="flex justify-center items-center my-4">
           <button
             onClick={flipTokens}
-            className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center"
+            className="w-10 h-10 bg-[#8473e3] rounded-full flex items-center justify-center"
           >
             <svg
               viewBox="0 0 24 24"
               fill="none"
-              stroke="currentColor"
+              stroke="#1c233b"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="w-6 h-6 text-gray-700"
+              className="w-6 h-6"
             >
               <path d="M7 19V5 M7 5L5 7 M7 5L9 7" />
               <path d="M17 5V19 M17 19L15 17 M17 19L19 17" />
@@ -319,65 +299,73 @@ export default function SwapPage() {
           </button>
         </div>
 
-        {/* "You Receive" => ExactOut */}
-        <div className="text-left font-semibold text-gray-700 mb-1">You Receive</div>
-        <div className="flex mb-3">
-          <div className="relative flex items-center border rounded-xl w-full overflow-hidden">
-            <input
-              className="p-2 w-full outline-none border-none"
-              placeholder="Select Token"
-              value={outputSearch}
-              onChange={(e) => setOutputSearch(e.target.value)}
-              onClick={() => setShowOutputDropdown(true)}
-            />
-            <input
-              type="number"
-              className="p-2 w-[100px] text-right outline-none border-none"
-              placeholder="0.00"
-              value={outputAmount}
-              onChange={(e) => onOutputAmountChange(e.target.value)}
-            />
-            {showOutputDropdown && (
-              <div
-                className="absolute z-50 bg-white border w-full max-h-36 overflow-auto top-full left-0"
-                style={{ marginTop: '2px' }}
-                onMouseDown={(e) => e.preventDefault()}
-              >
-                {displayedOutputTokens.map((t) => {
-                  const sym = getSymbol(t.address);
-                  const label = truncated(sym);
-                  const logo = getLogo();
-
-                  return (
-                    <div
-                      key={t.address}
-                      className="p-2 hover:bg-gray-100 cursor-pointer flex items-center space-x-2"
-                      onMouseDown={() => {
-                        setOutputSearch(label);
-                        setOutputMint(t.address);
-                        setShowOutputDropdown(false);
-                      }}
-                    >
-                      <Image
-                        src={logo}
-                        alt="icon"
-                        width={20}
-                        height={20}
-                        className="rounded-full"
-                      />
-                      <span>{label}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+        {/*
+          "You Receive" => negative margin => from -3rem to -2rem => 
+          so it moves down from the flip circle half of what it used to be
+        */}
+        <div className="mt-[-2rem]">
+          <div className="text-left font-semibold mb-2">You Receive</div>
+          <div className="flex mb-0">
+            <div className="relative flex items-center border-2 border-gray-500 rounded-xl w-full overflow-hidden">
+              <input
+                type="text"
+                className="appearance-none p-3 px-4 w-full outline-none border-none bg-transparent placeholder-gray-400"
+                placeholder="Select Token"
+                value={outputSearch}
+                onChange={(e) => setOutputSearch(e.target.value)}
+                onClick={() => setShowOutputDropdown(true)}
+              />
+              <input
+                type="number"
+                className="appearance-none p-3 px-4 w-[100px] text-right outline-none border-none bg-transparent placeholder-gray-400"
+                placeholder="0.00"
+                value={outputAmount}
+                onChange={(e) => onOutputAmountChange(e.target.value)}
+              />
+              {showOutputDropdown && (
+                <div
+                  className="absolute z-50 bg-[#1c243e] border-2 border-gray-500 w-full max-h-36 overflow-auto top-full left-0"
+                  style={{ marginTop: '2px' }}
+                  onMouseDown={(ee) => ee.preventDefault()}
+                >
+                  {LOCAL_TOKENS.filter((t) =>
+                    getSymbol(t.address).toLowerCase().includes(outputSearch.toLowerCase())
+                  ).map((t) => {
+                    const sym = getSymbol(t.address);
+                    const label = truncated(sym);
+                    const logo = getLogo();
+                    return (
+                      <div
+                        key={t.address}
+                        className="p-2 hover:bg-[#29304e] cursor-pointer flex items-center space-x-2"
+                        onMouseDown={() => {
+                          setOutputSearch(label);
+                          setOutputMint(t.address);
+                          setShowOutputDropdown(false);
+                        }}
+                      >
+                        <Image
+                          src={logo}
+                          alt="icon"
+                          width={20}
+                          height={20}
+                          className="rounded-full"
+                        />
+                        <span>{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
+        {/* Swap Now => no border */}
         <button
           onClick={doSwap}
           disabled={loading}
-          className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-xl font-semibold w-full"
+          className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-3 px-4 rounded-xl font-semibold w-full mt-3"
         >
           {loading ? 'Swapping...' : 'Swap Now'}
         </button>
