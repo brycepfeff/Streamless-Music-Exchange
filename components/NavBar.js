@@ -1,7 +1,8 @@
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/router';
 
 const WalletMultiButtonDynamic = dynamic(
   () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
@@ -10,12 +11,51 @@ const WalletMultiButtonDynamic = dynamic(
 
 export default function NavBar() {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+
+  // Refs for hamburger button and dropdown
+  const hamburgerRef = useRef(null);
+  const dropdownRef = useRef(null);
+
+  // Closes dropdown after ANY route change
+  useEffect(() => {
+    const handleRouteDone = () => setIsOpen(false);
+    router.events.on('routeChangeComplete', handleRouteDone);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteDone);
+    };
+  }, [router]);
+
+  // Closes dropdown if user clicks outside the hamburger and the dropdown
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (
+        hamburgerRef.current &&
+        dropdownRef.current &&
+        !hamburgerRef.current.contains(e.target) &&
+        !dropdownRef.current.contains(e.target)
+      ) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Closes dropdown after a link click
+  function closeDropdown() {
+    setIsOpen(false);
+  }
 
   return (
     <nav className="w-full bg-secondary text-white relative z-[999]">
       <div className="relative flex items-center w-full px-4 py-10 md:px-12 md:py-8">
-        {/* Mobile Hamburger */}
+        {/* Hamburger (Mobile Only) */}
         <button
+          ref={hamburgerRef}
           onClick={() => setIsOpen(!isOpen)}
           className={`
             block md:hidden focus:outline-none ml-2 mr-2
@@ -100,11 +140,9 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/*
-        Mobile Dropdown => #2c2d30 background, text-white, 
-        closes after selection => onClick={() => setIsOpen(false)}
-      */}
+      {/* Mobile Dropdown => #2c2d30 background, text-white */}
       <div
+        ref={dropdownRef}
         className={`
           absolute top-full left-0 w-full
           md:hidden
@@ -118,28 +156,28 @@ export default function NavBar() {
         `}
       >
         <ul className="flex flex-col space-y-2 ml-2">
-          <li onClick={() => setIsOpen(false)}>
+          <li onClick={closeDropdown}>
             <Link href="/">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Home
               </span>
             </Link>
           </li>
-          <li onClick={() => setIsOpen(false)}>
+          <li onClick={closeDropdown}>
             <Link href="/swap">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Swap
               </span>
             </Link>
           </li>
-          <li onClick={() => setIsOpen(false)}>
+          <li onClick={closeDropdown}>
             <Link href="/music">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Music
               </span>
             </Link>
           </li>
-          <li onClick={() => setIsOpen(false)}>
+          <li onClick={closeDropdown}>
             <Link href="/mint">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Mint
