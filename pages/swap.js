@@ -1,4 +1,3 @@
-/** pages/swap.js */
 import React, { useEffect, useState, useCallback } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Transaction } from '@solana/web3.js';
@@ -6,27 +5,19 @@ import dynamic from 'next/dynamic';
 import { Configuration, DefaultApi } from '@jup-ag/api';
 import Image from 'next/image';
 
-/*
-  Minimal Phantom connect button
-*/
 const WalletMultiButtonDynamic = dynamic(
   () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
   { ssr: false }
 );
 
-/*
-  Only two tokens: SOL & USDC
-*/
 const SOL_MINT = 'So11111111111111111111111111111111111111112';
 const USDC_MINT = 'FCqfQSujuPxy6V42UVcP7ZhvtrPTbY1hEAfnnFvHbcmN';
 
-/* Local definitions with decimals & symbols */
 const LOCAL_TOKENS = [
-  { address: SOL_MINT,  symbol: 'SOL',  decimals: 9 },
+  { address: SOL_MINT, symbol: 'SOL', decimals: 9 },
   { address: USDC_MINT, symbol: 'USDC', decimals: 6 },
 ];
 
-/* Fallback logo if you don't have official icons */
 const FALLBACK_LOGO =
   'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png';
 
@@ -34,41 +25,30 @@ export default function SwapPage() {
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
 
-  // aggregator => mainnet
   const [defaultApi, setDefaultApi] = useState(null);
 
-  // "You Pay" (ExactIn)
-  const [inputMint,   setInputMint]   = useState(USDC_MINT);
+  const [inputMint, setInputMint] = useState(USDC_MINT);
   const [inputAmount, setInputAmount] = useState('1');
 
-  // "You Receive" (ExactOut)
-  const [outputMint,   setOutputMint]   = useState(SOL_MINT);
+  const [outputMint, setOutputMint] = useState(SOL_MINT);
   const [outputAmount, setOutputAmount] = useState('');
 
   // UI states for searching & dropdown
-  const [inputSearch,       setInputSearch]       = useState('');
+  const [inputSearch, setInputSearch] = useState('');
   const [showInputDropdown, setShowInputDropdown] = useState(false);
 
-  const [outputSearch,       setOutputSearch]       = useState('');
+  const [outputSearch, setOutputSearch] = useState('');
   const [showOutputDropdown, setShowOutputDropdown] = useState(false);
 
-  // track swap
   const [loading, setLoading] = useState(false);
 
-  /*
-    aggregator => mainnet
-  */
+  // aggregator => mainnet
   useEffect(() => {
     const config = new Configuration({ basePath: 'https://quote-api.jup.ag' });
     const api = new DefaultApi(config);
     setDefaultApi(api);
   }, []);
 
-  /*
-    aggregator quote => 2 tokens only
-    - "ExactIn" => "You Pay"
-    - "ExactOut" => "You Receive"
-  */
   const doQuote = useCallback(
     async (inMint, outMint, rawAmt, mode) => {
       if (!defaultApi || !rawAmt || !inMint || !outMint) return null;
@@ -83,9 +63,9 @@ export default function SwapPage() {
       try {
         const quoteResp = await defaultApi.quoteGet({
           amount: lamports,
-          inputMint:  inMint,
+          inputMint: inMint,
           outputMint: outMint,
-          swapMode:   mode,
+          swapMode: mode,
           slippageBps: 50,
         });
         if (!quoteResp || !quoteResp.routes || quoteResp.routes.length === 0) {
@@ -108,7 +88,7 @@ export default function SwapPage() {
     [defaultApi]
   );
 
-  // "You Pay" => exactIn
+  // "You Pay" => ExactIn
   const onInputAmountChange = useCallback(
     async (val) => {
       setInputAmount(val);
@@ -119,7 +99,7 @@ export default function SwapPage() {
     [doQuote, inputMint, outputMint]
   );
 
-  // "You Receive" => exactOut
+  // "You Receive" => ExactOut
   const onOutputAmountChange = useCallback(
     async (val) => {
       setOutputAmount(val);
@@ -130,9 +110,7 @@ export default function SwapPage() {
     [doQuote, inputMint, outputMint]
   );
 
-  /*
-    aggregator swap => real on-chain
-  */
+  // aggregator swap => real on-chain
   const doSwap = useCallback(async () => {
     if (!inputMint || !outputMint) {
       alert('Pick input + output tokens');
@@ -214,12 +192,11 @@ export default function SwapPage() {
   };
 
   const getSymbol = (addr) => {
-    if (addr === SOL_MINT)  return 'SOL';
+    if (addr === SOL_MINT) return 'SOL';
     if (addr === USDC_MINT) return 'USDC';
     return '???';
   };
 
-  // Remove the parameter to avoid the 'unused vars' error
   const getLogo = () => FALLBACK_LOGO;
 
   // Flip logic => re-quote
@@ -235,30 +212,24 @@ export default function SwapPage() {
     setOutputAmount(oldInAmt);
 
     await onInputAmountChange(oldOutAmt);
-  }, [
-    inputMint,
-    outputMint,
-    inputAmount,
-    outputAmount,
-    onInputAmountChange
-  ]);
+  }, [inputMint, outputMint, inputAmount, outputAmount, onInputAmountChange]);
 
-  // Filter => input
+  // Filter => input tokens
   const displayedInputTokens = LOCAL_TOKENS.filter((t) =>
     getSymbol(t.address).toLowerCase().includes(inputSearch.toLowerCase())
   );
-  // Filter => output
+  // Filter => output tokens
   const displayedOutputTokens = LOCAL_TOKENS.filter((t) =>
     getSymbol(t.address).toLowerCase().includes(outputSearch.toLowerCase())
   );
 
+  // -----------------------------------------------------------
+  //                  NEW LAYOUT (NOT FIXED)
+  // -----------------------------------------------------------
   return (
-    <div
-      className="fixed z-50"
-      style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}
-    >
+    <div className="relative z-50 w-full max-w-[400px] mx-auto my-8">
       <div
-        className="bg-white w-[400px] h-[400px] rounded-2xl p-4 flex flex-col text-center relative"
+        className="bg-white rounded-2xl p-4 flex flex-col text-center relative"
         style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
       >
         <h2 className="text-2xl font-bold mb-3">Token Swap</h2>
@@ -267,7 +238,7 @@ export default function SwapPage() {
           <WalletMultiButtonDynamic />
         </div>
 
-        {/* "You Pay" => exactIn */}
+        {/* "You Pay" => ExactIn */}
         <div className="text-left font-semibold text-gray-700 mb-1">You Pay</div>
         <div className="flex mb-3">
           <div className="relative flex items-center border rounded-xl w-full overflow-hidden">
@@ -322,7 +293,7 @@ export default function SwapPage() {
           </div>
         </div>
 
-        {/* Flip => bigger circle => arrow paths */}
+        {/* Flip button */}
         <div className="flex justify-center items-center mb-3">
           <button
             onClick={flipTokens}
@@ -343,7 +314,7 @@ export default function SwapPage() {
           </button>
         </div>
 
-        {/* "You Receive" => exactOut */}
+        {/* "You Receive" => ExactOut */}
         <div className="text-left font-semibold text-gray-700 mb-1">You Receive</div>
         <div className="flex mb-3">
           <div className="relative flex items-center border rounded-xl w-full overflow-hidden">

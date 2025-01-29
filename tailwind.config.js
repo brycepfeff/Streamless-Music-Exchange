@@ -8,8 +8,8 @@ module.exports = {
     extend: {
       // Example custom colors for theming
       colors: {
-        primary: '	#0052FF',   // Indigo-like
-        secondary: '	#0052FF', // Darker Indigo
+        primary: '#080c1b',   // Indigo-like
+        secondary: '#080c1b', // Darker Indigo
       },
     },
   },
