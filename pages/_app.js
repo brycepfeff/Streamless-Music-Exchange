@@ -1,24 +1,25 @@
-/** pages/_app.js */
 import React from 'react';
-import '../styles/globals.css'; /* Tailwind + custom CSS */
-import '@solana/wallet-adapter-react-ui/styles.css'; /* Solana wallet UI defaults */
+import '../styles/globals.css'; // Tailwind + custom CSS
+import '@solana/wallet-adapter-react-ui/styles.css'; // Default wallet UI
 
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
-// We remove 'network' import since not used
+
 import NavBar from '../components/NavBar';
 
-/*
-  We'll keep a custom endpoint or the default mainnet endpoint, your choice.
-*/
-const MAINNET_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+/**
+ * 1) Put your real mainnet RPC here.
+ *    Example:
+ *    const MY_CUSTOM_RPC_ENDPOINT = "https://clean-solemn-waterfall.solana-mainnet.quiknode.pro/YOUR-TOKEN/";
+ */
+const MY_CUSTOM_RPC_ENDPOINT = 'https://clean-solemn-waterfall.solana-mainnet.quiknode.pro/d2863d9fc3dbb4c48f523ff357b6defe31eae786';
 
 function MyApp({ Component, pageProps }) {
-  // We remove 'network' since we no longer set it,
-  // and just directly use MAINNET_ENDPOINT or your custom node.
-  const endpoint = MAINNET_ENDPOINT;
+  // 2) We directly set the endpoint to your custom node—no fallback.
+  const endpoint = MY_CUSTOM_RPC_ENDPOINT;
 
+  // 3) Phantom adapter
   const wallets = [new PhantomWalletAdapter()];
 
   return (
