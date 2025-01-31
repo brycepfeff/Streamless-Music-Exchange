@@ -14,7 +14,7 @@ import { Connection, VersionedTransaction } from "@solana/web3.js";
 import fetch from "cross-fetch";
 import { useWallet } from "@solana/wallet-adapter-react";
 
-// Dynamic import of the wallet button to avoid SSR issues
+// Dynamically load the wallet button to avoid SSR issues
 const WalletMultiButtonDynamic = dynamic(
   () => import("@solana/wallet-adapter-react-ui").then((mod) => mod.WalletMultiButton),
   { ssr: false }
@@ -41,7 +41,7 @@ function getLogo(mint) {
     return "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/solana/info/logo.png";
   }
   if (mint === JUP_MINT) {
-    // JUP logo => can be a local file if you have one
+    // JUP logo => local file or external link
     return "/JUP.png";
   }
   // fallback
@@ -49,10 +49,7 @@ function getLogo(mint) {
 }
 
 function RealSwapPage() {
-  // ----------------------------------
-  // 1) CREATE A STABLE customConnection
-  // ----------------------------------
-  // Using useMemo so it doesn't recreate on each render
+  // Keep a stable Connection so React hooks don't warn
   const customConnection = useMemo(() => {
     return new Connection(
       "https://clean-solemn-waterfall.solana-mainnet.quiknode.pro/d2863d9fc3dbb4c48f523ff357b6defe31eae786"
@@ -70,9 +67,9 @@ function RealSwapPage() {
   const [receiveAmount, setReceiveAmount] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ----------------------------------
-  // 2) QUOTE LOGIC
-  // ----------------------------------
+  /**
+   * QUOTE => direct Jupiter REST call
+   */
   const doQuote = useCallback(
     async (inMint, outMint, rawAmt, mode) => {
       try {
@@ -164,9 +161,9 @@ function RealSwapPage() {
     [doQuote, payMint, receiveMint]
   );
 
-  // ----------------------------------
-  // 3) SWAP LOGIC
-  // ----------------------------------
+  /**
+   *  SWAP => aggregator => EXACT_IN
+   */
   const doSwap = useCallback(async () => {
     try {
       if (!publicKey) {
@@ -180,7 +177,7 @@ function RealSwapPage() {
 
       setLoading(true);
 
-      // Fresh quote for EXACT_IN
+      // 1) Fresh quote
       const tokenIn = TOKENS.find((t) => t.address === payMint);
       const decIn = tokenIn?.decimals ?? 9;
       const lamports = Math.floor(parseFloat(payAmount) * 10 ** decIn);
@@ -191,20 +188,23 @@ function RealSwapPage() {
 
       if (!quoteResponse.routePlan || quoteResponse.routePlan.length === 0) {
         alert("No route found (routePlan is empty).");
+        setLoading(false);
         return;
       }
       if (!quoteResponse.outAmount || quoteResponse.outAmount === "0") {
         alert("No valid outAmount from aggregator (maybe 0 route).");
+        setLoading(false);
         return;
       }
 
-      // Prepare swap
+      // 2) Prepare swap body
       const swapBody = {
         quoteResponse,
         userPublicKey: publicKey.toBase58(),
         wrapAndUnwrapSol: true,
       };
 
+      // 3) /swap
       const swapResp = await (
         await fetch("https://quote-api.jup.ag/v6/swap", {
           method: "POST",
@@ -217,14 +217,15 @@ function RealSwapPage() {
       const { swapTransaction } = swapResp;
       if (!swapTransaction) {
         alert("No swapTransaction returned. Check logs.");
+        setLoading(false);
         return;
       }
 
-      // Jupiter's v6 => versioned transaction
+      // 4) Versioned Transaction
       const txBuf = Buffer.from(swapTransaction, "base64");
       const versionedTx = VersionedTransaction.deserialize(txBuf);
 
-      // Sign + send
+      // 5) Sign + send
       const txSig = await sendTransaction(versionedTx, customConnection);
       alert(`Swap submitted! Tx Signature: ${txSig}`);
     } catch (err) {
@@ -233,7 +234,7 @@ function RealSwapPage() {
     } finally {
       setLoading(false);
     }
-  }, [publicKey, payMint, receiveMint, payAmount, sendTransaction, customConnection]);
+  }, [publicKey, payMint, receiveMint, payAmount, customConnection, sendTransaction]);
 
   // Auto-refresh => re-quote => EXACT_IN
   useEffect(() => {
@@ -245,7 +246,7 @@ function RealSwapPage() {
     return () => clearInterval(timer);
   }, [onPayAmountChange, payAmount]);
 
-  // Example snippet => 0.1 SOL => JUP
+  // Example snippet: 0.1 SOL => JUP
   useEffect(() => {
     (async () => {
       try {
@@ -264,9 +265,6 @@ function RealSwapPage() {
     })();
   }, []);
 
-  // ----------------------------------
-  // 4) RENDER UI
-  // ----------------------------------
   return (
     <div className="max-w-[400px] w-full mx-auto my-8 px-4 text-white">
       <div className="bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
@@ -281,15 +279,26 @@ function RealSwapPage() {
         <label className="text-left w-full font-semibold mb-1">You Pay</label>
         <div className="grid grid-cols-2 gap-2 w-full mb-4">
           <div className="relative w-full h-[48px]">
+
+            {/* ICON => hide on mobile, show on desktop */}
             <Image
               src={getLogo(payMint)}
               alt="pay icon"
               width={24}
               height={24}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full"
+              className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full"
             />
+
             <select
-              className="w-full h-full pl-16 md:pl-10 pr-8 rounded bg-[#29304e] border border-gray-500 outline-none"
+              className="
+                w-full h-full 
+                pl-2 md:pl-10  /* Minimal padding on mobile, more on desktop */
+                pr-8 
+                rounded 
+                bg-[#29304e] 
+                border border-gray-500 
+                outline-none
+              "
               value={payMint}
               onChange={async (e) => {
                 setPayMint(e.target.value);
@@ -316,19 +325,30 @@ function RealSwapPage() {
           />
         </div>
 
-        {/* "You Receive" => EXACT_OUT */}
+        {/* "You Receive" => EXACT_OUT if typed */}
         <label className="text-left w-full font-semibold mb-1">You Receive</label>
         <div className="grid grid-cols-2 gap-2 w-full mb-4">
           <div className="relative w-full h-[48px]">
+
+            {/* ICON => hide on mobile, show on desktop */}
             <Image
               src={getLogo(receiveMint)}
               alt="receive icon"
               width={24}
               height={24}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full"
+              className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full"
             />
+
             <select
-              className="w-full h-full pl-16 md:pl-10 pr-8 rounded bg-[#29304e] border border-gray-500 outline-none"
+              className="
+                w-full h-full 
+                pl-2 md:pl-10  /* Minimal padding on mobile, more on desktop */
+                pr-8 
+                rounded 
+                bg-[#29304e] 
+                border border-gray-500 
+                outline-none
+              "
               value={receiveMint}
               onChange={async (e) => {
                 setReceiveMint(e.target.value);
@@ -355,7 +375,7 @@ function RealSwapPage() {
           />
         </div>
 
-        {/* Swap Button */}
+        {/* Swap button */}
         <button
           onClick={doSwap}
           disabled={loading}
@@ -368,7 +388,7 @@ function RealSwapPage() {
   );
 }
 
-// **Export** with SSR disabled => no "Identifier 'dynamic' has already been declared" error
+// Disable SSR so everything is client side
 export default dynamic(() => Promise.resolve(RealSwapPage), {
   ssr: false,
 });
