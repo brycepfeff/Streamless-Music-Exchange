@@ -68,7 +68,7 @@ export default function HomePage() {
         </Link>
 
         <Link
-          href="/music"
+          href="/listen"
           className="
             bg-gradient-to-r from-purple-500 to-indigo-600
             text-white
