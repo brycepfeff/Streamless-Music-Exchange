@@ -5,7 +5,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 
 const WalletMultiButtonDynamic = dynamic(
-  () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
+  () =>
+    import('@solana/wallet-adapter-react-ui').then(
+      (mod) => mod.WalletMultiButton
+    ),
   { ssr: false }
 );
 
@@ -17,7 +20,7 @@ export default function NavBar() {
   const hamburgerRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Closes dropdown after ANY route change
+  // Close dropdown after ANY route change
   useEffect(() => {
     const handleRouteDone = () => setIsOpen(false);
     router.events.on('routeChangeComplete', handleRouteDone);
@@ -26,7 +29,7 @@ export default function NavBar() {
     };
   }, [router]);
 
-  // Closes dropdown if user clicks outside the hamburger and the dropdown
+  // Close dropdown if user clicks outside the hamburger and the dropdown
   useEffect(() => {
     function handleClickOutside(e) {
       if (
@@ -117,14 +120,14 @@ export default function NavBar() {
               Swap
             </span>
           </Link>
-          <Link href="/music">
+          <Link href="/listen">
             <span className="hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
-              Music
+              Listen
             </span>
           </Link>
-          <Link href="/mint">
+          <Link href="/market">
             <span className="hover:bg-primary px-3 py-2 rounded-md cursor-pointer mr-4">
-              Mint
+              Market
             </span>
           </Link>
 
@@ -171,16 +174,16 @@ export default function NavBar() {
             </Link>
           </li>
           <li onClick={closeDropdown}>
-            <Link href="/music">
+            <Link href="/listen">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
-                Music
+                Listen
               </span>
             </Link>
           </li>
           <li onClick={closeDropdown}>
-            <Link href="/mint">
+            <Link href="/market">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
-                Mint
+                Market
               </span>
             </Link>
           </li>

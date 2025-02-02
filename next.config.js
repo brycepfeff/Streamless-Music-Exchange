@@ -1,19 +1,26 @@
-// next.config.js
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // If you're on Next 13+, you can use remotePatterns
-    images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'raw.githubusercontent.com',
-          port: '',
-          pathname: '/**'
-        }
-      ]
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'raw.githubusercontent.com',
+        port: '',
+        pathname: '/**'
+      }
+    ]
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false
+      };
+      // Optionally, you can alias the module to false:
+      config.resolve.alias['@solana/zk-sdk'] = false;
     }
-  };
-  
-  module.exports = nextConfig;
-  
+    return config;
+  }
+};
+
+module.exports = nextConfig;
