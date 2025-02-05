@@ -10,6 +10,7 @@ const nextConfig = {
       }
     ]
   },
+  transpilePackages: ['@metaplex-foundation/mpl-token-metadata'],
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
