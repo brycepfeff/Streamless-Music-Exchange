@@ -4,14 +4,15 @@ import { PublicKey } from '@solana/web3.js';
 import dynamic from 'next/dynamic';
 import * as borsh from 'borsh';
 
-// Dynamically load the mobile wallet connect button.
 const WalletMultiButtonDynamic = dynamic(
-  () => import('@solana/wallet-adapter-react-ui').then((mod) => mod.WalletMultiButton),
+  () =>
+    import('@solana/wallet-adapter-react-ui').then(
+      (mod) => mod.WalletMultiButton
+    ),
   { ssr: false }
 );
 
-// --- Define minimal classes and schema for Metadata decoding ---
-
+// ----- Minimal Borsh Schema for Metadata Decoding -----
 class Creator {
   constructor(args) {
     this.address = args.address;
@@ -104,7 +105,7 @@ export default function MusicPage() {
     }
     (async () => {
       try {
-        // Fetch all parsed token accounts for the connected wallet.
+        // Get all parsed token accounts for the connected wallet.
         const resp = await connection.getParsedTokenAccountsByOwner(
           publicKey,
           { programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') }
@@ -130,20 +131,21 @@ export default function MusicPage() {
               );
               const accountInfo = await connection.getAccountInfo(metadataPDA);
               if (!accountInfo) continue;
-              // Decode the on‑chain metadata.
+              // Decode on-chain metadata.
               const metadata = decodeMetadata(accountInfo.data);
               // Clean the URI by removing null characters.
               const uri = metadata.data.uri.replace(/\0/g, '');
               if (!uri) continue;
-              // Fetch the off‑chain JSON metadata.
+              // Fetch off-chain JSON metadata.
               const metadataResponse = await fetch(uri);
               const metadataJson = await metadataResponse.json();
-              // Only include tokens that have a non‑empty audio field.
+              // Only include tokens that have a non-empty audio field.
               if (metadataJson.audio && metadataJson.audio.trim() !== "") {
                 tokens.push({
                   mint: mintAddress,
-                  name: metadataJson.name,     // Artist name
-                  symbol: metadataJson.symbol, // Song name/ticker
+                  // For mobile: song on first row, artist on second row.
+                  song: metadataJson.symbol,
+                  artist: metadataJson.name,
                   audio: metadataJson.audio,
                   image: metadataJson.image,
                 });
@@ -162,41 +164,65 @@ export default function MusicPage() {
   }, [publicKey, connection]);
 
   return (
-    <div className="max-w-[400px] mx-auto my-8 px-4">
-      <div className="bg-gray-900 rounded-2xl p-8 text-white shadow-lg">
-        <h2 className="text-3xl font-bold mb-6 text-center">Exclusive Music</h2>
-        <div className="block md:hidden mb-4 text-center">
-          <WalletMultiButtonDynamic className="bg-white text-black px-3 py-2 rounded-md font-semibold" />
-        </div>
-        {!publicKey ? (
-          <p className="text-center">Please connect your wallet to check access.</p>
-        ) : musicTokens.length > 0 ? (
-          <div className="space-y-6">
-            {musicTokens.map((token, idx) => (
-              <div key={idx} className="bg-gray-800 p-4 rounded-lg shadow-md">
-                <div className="flex items-center mb-4">
-                  {token.image && (
-                    <img
-                      src={token.image}
-                      alt={token.name}
-                      className="w-16 h-16 rounded-full mr-4 object-cover"
-                    />
-                  )}
-                  <div>
-                    <h3 className="text-xl font-bold">{token.name}</h3>
-                    <p className="text-gray-400">{token.symbol}</p>
+    <div className="flex flex-col items-center">
+      {/* Mobile-only Wallet Connect Button in its own container */}
+      <div className="w-full block md:hidden text-center mt-0 mb-0">
+        <WalletMultiButtonDynamic className="bg-white text-black px-4 py-2 rounded-md font-semibold inline-block" />
+      </div>
+      <div className="max-w-full md:max-w-[600px] mx-auto my-8 px-4">
+        <div className="bg-gray-900 rounded-2xl p-8 text-white shadow-lg">
+          <h2 className="text-3xl font-bold mb-6 text-center">
+            {musicTokens.length > 0 ? "Your Music" : "Exclusive Music"}
+          </h2>
+          {!publicKey ? (
+            <p className="text-center">Please connect your wallet to check access.</p>
+          ) : musicTokens.length > 0 ? (
+            <div className="space-y-6">
+              {musicTokens.map((token, idx) => (
+                <div key={idx} className="bg-gray-800 p-4 rounded-lg shadow-md">
+                  <div className="flex items-center mb-4">
+                    {token.image && (
+                      <img
+                        src={token.image}
+                        alt={token.artist}
+                        className="w-16 h-16 mr-4 object-contain"
+                      />
+                    )}
+                    <div className="flex-1 text-center">
+                      {/* Mobile: Song on first row, Artist on second row (smaller, lighter) */}
+                      <div className="block md:hidden">
+                        <h3 className="text-xl font-bold">{token.song}</h3>
+                        <p className="text-sm text-gray-400">{token.artist}</p>
+                      </div>
+                      {/* Desktop: Combined line with song in white and artist in lighter gray */}
+                      <div className="hidden md:block">
+                        <h3 className="text-xl font-bold">
+                          <span>{token.song}</span>
+                          <span className="text-gray-400"> - {token.artist}</span>
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-center">
+                    <audio
+                      controls
+                      preload="auto"
+                      playsInline
+                      controlsList="nodownload noplaybackrate"
+                      className="w-full rounded-none"
+                      style={{ borderRadius: 0 }}
+                    >
+                      <source src={token.audio} type="audio/mpeg" />
+                      Your browser does not support the audio element.
+                    </audio>
                   </div>
                 </div>
-                <audio controls className="w-full">
-                  <source src={token.audio} type="audio/mpeg" />
-                  Your browser does not support the audio element.
-                </audio>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center">You do not have the required tokens to access.</p>
-        )}
+              ))}
+            </div>
+          ) : (
+            <p className="text-center">You do not have the required tokens to access.</p>
+          )}
+        </div>
       </div>
     </div>
   );
