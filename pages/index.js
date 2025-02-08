@@ -8,7 +8,7 @@ export default function HomePage() {
         min-h-screen w-full
         flex flex-col items-center
         justify-start
-        pt-36
+        pt-20
         px-4
         bg-secondary
       "
@@ -44,29 +44,11 @@ export default function HomePage() {
       </p>
 
       {/*
-        Buttons row => bigger margin on desktop => 'mt-6 md:mt-10'
-        So mobile remains 'mt-6', desktop gets more space.
+        Vertical Button Stack:
+        The buttons are ordered top-to-bottom: Listen, Market, Swap.
+        The container's max-width sets the width for all buttons.
       */}
-      <div className="mt-6 md:mt-10 flex flex-row space-x-4">
-        {/* 
-          REPLACED <a> WITH <Link> 
-          passing className directly (Next.js 13+ approach),
-          no spacing changed 
-        */}
-        <Link
-          href="/swap"
-          className="
-            bg-gradient-to-r from-purple-500 to-indigo-600
-            text-white
-            px-6 py-3
-            rounded-xl font-semibold
-            text-lg md:text-xl
-            md:px-12
-          "
-        >
-          Swap
-        </Link>
-
+      <div className="mt-6 md:mt-10 w-full max-w-[300px] flex flex-col space-y-4">
         <Link
           href="/listen"
           className="
@@ -75,10 +57,38 @@ export default function HomePage() {
             px-6 py-3
             rounded-xl font-semibold
             text-lg md:text-xl
-            md:px-12
+            text-center
           "
         >
           Listen
+        </Link>
+
+        <Link
+          href="/market"
+          className="
+            bg-gradient-to-r from-purple-500 to-indigo-600
+            text-white
+            px-6 py-3
+            rounded-xl font-semibold
+            text-lg md:text-xl
+            text-center
+          "
+        >
+          Market
+        </Link>
+
+        <Link
+          href="/swap"
+          className="
+            bg-gradient-to-r from-purple-500 to-indigo-600
+            text-white
+            px-6 py-3
+            rounded-xl font-semibold
+            text-lg md:text-xl
+            text-center
+          "
+        >
+          Swap
         </Link>
       </div>
     </div>

@@ -115,19 +115,19 @@ export default function NavBar() {
               Home
             </span>
           </Link>
-          <Link href="/swap">
-            <span className="hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
-              Swap
-            </span>
-          </Link>
           <Link href="/listen">
             <span className="hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
               Listen
             </span>
           </Link>
           <Link href="/market">
-            <span className="hover:bg-primary px-3 py-2 rounded-md cursor-pointer mr-4">
+            <span className="hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
               Market
+            </span>
+          </Link>
+          <Link href="/swap">
+            <span className="hover:bg-primary px-3 py-2 rounded-md cursor-pointer mr-4">
+              Swap
             </span>
           </Link>
 
@@ -143,12 +143,11 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* Mobile Dropdown => #2c2d30 background, text-white */}
+      {/* Mobile Dropdown with slightly reduced side margins */}
       <div
         ref={dropdownRef}
         className={`
-          absolute top-full left-0 w-full
-          md:hidden
+          absolute top-full left-6 right-6 md:hidden
           transition-all duration-300 overflow-hidden
           rounded-lg
           ${
@@ -158,18 +157,11 @@ export default function NavBar() {
           }
         `}
       >
-        <ul className="flex flex-col space-y-2 ml-2">
+        <ul className="flex flex-col space-y-2">
           <li onClick={closeDropdown}>
             <Link href="/">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Home
-              </span>
-            </Link>
-          </li>
-          <li onClick={closeDropdown}>
-            <Link href="/swap">
-              <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
-                Swap
               </span>
             </Link>
           </li>
@@ -184,6 +176,13 @@ export default function NavBar() {
             <Link href="/market">
               <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
                 Market
+              </span>
+            </Link>
+          </li>
+          <li onClick={closeDropdown}>
+            <Link href="/swap">
+              <span className="block hover:bg-primary px-3 py-2 rounded-md cursor-pointer">
+                Swap
               </span>
             </Link>
           </li>

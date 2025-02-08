@@ -113,6 +113,7 @@ function MarketPage() {
   const logoFileInputRef = useRef(null);
 
   const fetchMintedTokens = useCallback(async () => {
+    // Dummy data for demonstration.
     setMintedTokens([
       {
         id: 1,
@@ -140,6 +141,11 @@ function MarketPage() {
   useEffect(() => {
     fetchMintedTokens();
   }, [fetchMintedTokens]);
+
+  // Marketplace: Filter tokens minted by the connected wallet.
+  const approvedTokens = mintedTokens.filter(
+    (token) => token.mintedBy === (userPubkey ? userPubkey.toBase58() : "")
+  );
 
   const handleChooseAudioFile = () => {
     if (audioFileInputRef.current) {
@@ -257,8 +263,6 @@ function MarketPage() {
       );
 
       // Mint tokens.
-      // With decimals = 9, 1 token = 1e9 base units.
-      // To mint 1,000,000,000 tokens, mint 1e9 * 1e9 = 1e18 base units.
       const amountToMint = 1000000000 * Math.pow(10, decimals);
       mintTx.add(
         createMintToInstruction(
@@ -315,7 +319,6 @@ function MarketPage() {
       });
 
       let instructions = builder.getInstructions();
-      // Wrap keys as proper PublicKey instances if needed.
       instructions = instructions.map((instr) => ({
         ...instr,
         keys: instr.keys.map((k) => {
@@ -362,131 +365,117 @@ function MarketPage() {
     setIsMinting(false);
   };
 
-  const approvedTokens = mintedTokens.filter(
-    (token) => token.mintedBy === (userPubkey ? userPubkey.toBase58() : "")
-  );
-
   return (
-    <div className="max-w-6xl mx-auto my-2 px-8 text-white">
-      <div className="flex flex-col md:flex-row gap-6 justify-center">
-        {/* Marketplace Card */}
-        <div className="w-full sm:w-[400px] mx-auto bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8">
-          <h2 className="text-2xl font-bold mb-4 text-center">Marketplace</h2>
-          {approvedTokens.length === 0 ? (
-            <p className="text-gray-400 text-center">No approved tokens minted yet.</p>
-          ) : (
-            <ul className="divide-y divide-gray-600">
-              {approvedTokens.map((token) => (
-                <li
-                  key={token.id}
-                  className="py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center"
-                >
-                  <div>
-                    <span className="font-medium">
-                      Token #{token.id} - {token.ticker}{" "}
-                      {token.tokenName && `(${token.tokenName})`}
-                    </span>
-                    <div className="text-xs text-gray-400">
-                      Supply: {token.supply}
-                      {token.audioFileName && (
-                        <span> | Audio: {token.audioFileName}</span>
-                      )}
-                      {token.logoFileName && (
-                        <span> | Logo: {token.logoFileName}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-400 break-all mt-1 sm:mt-0">
-                    Tx: {token.txSignature}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+    <div className="max-w-[400px] w-full mx-auto my-8 px-4 text-white">
+      {/* Create Token Card */}
+      <div className="bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
+        <h2 className="text-2xl font-bold mb-4">Create Token</h2>
+        <div className="mb-4">
+          <WalletMultiButtonDynamic />
         </div>
+        <div className="space-y-4 mb-4 w-full">
+          {/* Input for Song (Ticker) */}
+          <div className="flex flex-col">
+            <label className="text-left w-full font-semibold mb-1">Song</label>
+            <input
+              type="text"
+              placeholder="Ticker"
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value)}
+              className="w-full h-[48px] px-3 rounded bg-[#29304e] border border-gray-500 placeholder-gray-400 text-white focus:outline-none"
+            />
+          </div>
+          {/* Input for Artist (Name) */}
+          <div className="flex flex-col">
+            <label className="text-left w-full font-semibold mb-1">Artist</label>
+            <input
+              type="text"
+              placeholder="Name"
+              value={tokenName}
+              onChange={(e) => setTokenName(e.target.value)}
+              className="w-full h-[48px] px-3 rounded bg-[#29304e] border border-gray-500 placeholder-gray-400 text-white focus:outline-none"
+            />
+          </div>
+          {/* Section for Token Logo */}
+          <div className="flex flex-col">
+            <label className="text-white font-semibold mb-1 text-center">Token Logo</label>
+            <input
+              type="file"
+              accept="image/*"
+              ref={logoFileInputRef}
+              onChange={(e) =>
+                setLogoFile(e.target.files ? e.target.files[0] : null)
+              }
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={handleChooseLogoFile}
+              className="block mx-auto bg-[#1c243e] border border-gray-500 text-white text-sm py-1 px-2 rounded-full font-semibold whitespace-nowrap mb-1"
+            >
+              {logoFile ? logoFile.name : "Choose Logo"}
+            </button>
+          </div>
+          {/* Section for Audio Media */}
+          <div className="flex flex-col">
+            <label className="text-white font-semibold mb-1 text-center">Audio Media</label>
+            <input
+              type="file"
+              accept="audio/*"
+              ref={audioFileInputRef}
+              onChange={(e) =>
+                setAudioFile(e.target.files ? e.target.files[0] : null)
+              }
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={handleChooseAudioFile}
+              className="block mx-auto bg-[#1c243e] border border-gray-500 text-white text-sm py-1 px-2 rounded-full font-semibold whitespace-nowrap mb-1"
+            >
+              {audioFile ? audioFile.name : "Choose Audio"}
+            </button>
+          </div>
+        </div>
+        <button
+          onClick={handleMint}
+          disabled={isMinting}
+          className="w-full p-3 rounded font-semibold bg-gradient-to-r from-purple-500 to-indigo-600"
+        >
+          {isMinting ? "Minting..." : "Mint Now"}
+        </button>
+      </div>
 
-        {/* Create Token Card */}
-        <div className="w-full sm:w-[400px] mx-auto bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8">
-          <h2 className="text-2xl font-bold mb-4 text-center">Create Token</h2>
-          <div className="mb-6 flex justify-center">
-            <WalletMultiButtonDynamic />
-          </div>
-          <div className="space-y-4 mb-4">
-            {/* Input for Song (Ticker) */}
-            <div className="flex flex-col">
-              <label className="text-white font-semibold mb-1">Song</label>
-              <input
-                type="text"
-                placeholder="Ticker"
-                value={ticker}
-                onChange={(e) => setTicker(e.target.value)}
-                className="w-full h-10 px-3 rounded bg-[#29304e] border border-gray-500 placeholder-gray-400 text-white focus:outline-none"
-              />
-            </div>
-            {/* Input for Artist (Name) */}
-            <div className="flex flex-col">
-              <label className="text-white font-semibold mb-1">Artist</label>
-              <input
-                type="text"
-                placeholder="Name"
-                value={tokenName}
-                onChange={(e) => setTokenName(e.target.value)}
-                className="w-full h-10 px-3 rounded bg-[#29304e] border border-gray-500 placeholder-gray-400 text-white focus:outline-none"
-              />
-            </div>
-            {/* Section for Token Logo */}
-            <div className="flex flex-col">
-              <label className="text-white font-semibold mb-1 text-center">
-                Token Logo
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                ref={logoFileInputRef}
-                onChange={(e) =>
-                  setLogoFile(e.target.files ? e.target.files[0] : null)
-                }
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={handleChooseLogoFile}
-                className="block mx-auto bg-[#1c243e] border border-gray-500 text-white text-sm py-1 px-2 rounded-full font-semibold whitespace-nowrap mb-1"
+      {/* Marketplace Card */}
+      <div className="mt-8 bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
+        <h2 className="text-2xl font-bold mb-4 text-center">Marketplace</h2>
+        {approvedTokens.length === 0 ? (
+          <p className="text-gray-400 text-center">No approved tokens minted yet.</p>
+        ) : (
+          <ul className="divide-y divide-gray-600 text-left">
+            {approvedTokens.map((token) => (
+              <li
+                key={token.id}
+                className="py-2 flex flex-col sm:flex-row justify-between items-start sm:items-center"
               >
-                {logoFile ? logoFile.name : "Choose Logo"}
-              </button>
-            </div>
-            {/* Section for Audio Media */}
-            <div className="flex flex-col">
-              <label className="text-white font-semibold mb-1 text-center">
-                Audio Media
-              </label>
-              <input
-                type="file"
-                accept="audio/*"
-                ref={audioFileInputRef}
-                onChange={(e) =>
-                  setAudioFile(e.target.files ? e.target.files[0] : null)
-                }
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={handleChooseAudioFile}
-                className="block mx-auto bg-[#1c243e] border border-gray-500 text-white text-sm py-1 px-2 rounded-full font-semibold whitespace-nowrap mb-1"
-              >
-                {audioFile ? audioFile.name : "Choose Audio"}
-              </button>
-            </div>
-          </div>
-          <button
-            onClick={handleMint}
-            disabled={isMinting}
-            className="w-full p-3 rounded font-semibold bg-gradient-to-r from-purple-500 to-indigo-600"
-          >
-            {isMinting ? "Minting..." : "Mint Now"}
-          </button>
-        </div>
+                <div>
+                  <span className="font-medium">
+                    Token #{token.id} - {token.ticker}{" "}
+                    {token.tokenName && `(${token.tokenName})`}
+                  </span>
+                  <div className="text-xs text-gray-400">
+                    Supply: {token.supply}
+                    {token.audioFileName && <span> | Audio: {token.audioFileName}</span>}
+                    {token.logoFileName && <span> | Logo: {token.logoFileName}</span>}
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400 break-all mt-1 sm:mt-0">
+                  Tx: {token.txSignature}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
