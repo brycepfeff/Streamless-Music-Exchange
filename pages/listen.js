@@ -84,7 +84,6 @@ const METADATA_SCHEMA = new Map([
   ],
 ]);
 
-// Use deserializeUnchecked to decode metadata and ignore extra trailing bytes.
 function decodeMetadata(buffer) {
   return borsh.deserializeUnchecked(
     METADATA_SCHEMA,
@@ -93,7 +92,6 @@ function decodeMetadata(buffer) {
   );
 }
 
-// The Token Metadata program ID.
 const METADATA_PROGRAM_ID = new PublicKey(
   "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 );
@@ -110,7 +108,6 @@ export default function MusicPage() {
     }
     (async () => {
       try {
-        // Get all parsed token accounts for the connected wallet.
         const resp = await connection.getParsedTokenAccountsByOwner(
           publicKey,
           {
@@ -120,16 +117,12 @@ export default function MusicPage() {
           }
         );
         const tokens = [];
-        // Process each token account.
         for (const item of resp.value) {
           const info = item.account.data.parsed.info;
           const uiAmount = Number(info.tokenAmount.uiAmount);
-          // Only consider tokens with a balance >= 1.
           if (uiAmount >= 1) {
             try {
-              const mintAddress = info.mint;
-              const mintPubkey = new PublicKey(mintAddress);
-              // Derive the PDA for the token's metadata account.
+              const mintPubkey = new PublicKey(info.mint);
               const [metadataPDA] = await PublicKey.findProgramAddress(
                 [
                   Buffer.from("metadata"),
@@ -140,26 +133,21 @@ export default function MusicPage() {
               );
               const accountInfo = await connection.getAccountInfo(metadataPDA);
               if (!accountInfo) continue;
-              // Decode on-chain metadata.
               const metadata = decodeMetadata(accountInfo.data);
-              // Clean the URI by removing null characters.
               const uri = metadata.data.uri.replace(/\0/g, "");
               if (!uri) continue;
-              // Fetch off-chain JSON metadata.
               const metadataResponse = await fetch(uri);
               const metadataJson = await metadataResponse.json();
-              // Only include tokens that have a non-empty audio field.
-              if (metadataJson.audio && metadataJson.audio.trim() !== "") {
+              if (metadataJson.audio?.trim()) {
                 tokens.push({
-                  mint: mintAddress,
+                  mint: info.mint,
                   song: metadataJson.symbol,
                   artist: metadataJson.name,
                   audio: metadataJson.audio,
                   image: metadataJson.image,
                 });
               }
-            } catch (innerErr) {
-              console.error("Error processing token:", innerErr);
+            } catch {
               continue;
             }
           }
@@ -173,11 +161,11 @@ export default function MusicPage() {
 
   return (
     <div className="max-w-[400px] w-full mx-auto my-8 px-4 text-white">
-      <div className="bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
+      <div className="bg-[#141e2a] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
         <h2 className="text-2xl font-bold mb-4 text-center">
           {musicTokens.length > 0 ? "Your Music" : "Exclusive Music"}
         </h2>
-        {/* Wallet Connect Button placed inside the card (same as other pages) */}
+        {/* Wallet Connect Button placed inside the card */}
         <div className="mb-4">
           <WalletMultiButtonDynamic />
         </div>
@@ -201,21 +189,16 @@ export default function MusicPage() {
                     />
                   )}
                   <div className="flex-1 text-center">
-                    {/* Mobile: Song on first row, Artist on second row */}
                     <div className="block md:hidden">
                       <h3 className="text-xl font-bold">{token.song}</h3>
                       <p className="text-sm text-gray-400">
                         {token.artist}
                       </p>
                     </div>
-                    {/* Desktop: Combined line with song and artist */}
                     <div className="hidden md:block">
                       <h3 className="text-xl font-bold">
                         <span>{token.song}</span>
-                        <span className="text-gray-400">
-                          {" "}
-                          - {token.artist}
-                        </span>
+                        <span className="text-gray-400"> - {token.artist}</span>
                       </h3>
                     </div>
                   </div>

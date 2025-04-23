@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import Image from 'next/image'; 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
@@ -77,7 +77,7 @@ export default function NavBar() {
           </div>
         </button>
 
-        {/* Mobile Logo => clickable => Link to home */}
+        {/* Mobile Logo */}
         <div
           className="
             block md:hidden
@@ -96,7 +96,7 @@ export default function NavBar() {
           </Link>
         </div>
 
-        {/* Desktop Logo => clickable => Link to home */}
+        {/* Desktop Logo */}
         <div className="hidden md:block">
           <Link href="/">
             <Image
@@ -133,7 +133,8 @@ export default function NavBar() {
 
           <WalletMultiButtonDynamic
             className="
-              bg-white text-secondary
+              bg-gradient-to-r from-[#5de0e6] to-[#004aad]
+              text-white
               px-3 py-2
               rounded-md font-semibold
               whitespace-nowrap
@@ -143,7 +144,7 @@ export default function NavBar() {
         </div>
       </div>
 
-      {/* Mobile Dropdown with slightly reduced side margins */}
+      {/* Mobile Dropdown */}
       <div
         ref={dropdownRef}
         className={`

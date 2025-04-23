@@ -267,7 +267,7 @@ function RealSwapPage() {
 
   return (
     <div className="max-w-[400px] w-full mx-auto my-8 px-4 text-white">
-      <div className="bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
+      <div className="bg-[#141e2a] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
         <h2 className="text-2xl font-bold mb-4">Token Swap</h2>
 
         {/* Connect wallet => Phantom, etc. */}
@@ -295,7 +295,7 @@ function RealSwapPage() {
                 pl-2 md:pl-10  /* Minimal padding on mobile, more on desktop */
                 pr-8 
                 rounded 
-                bg-[#29304e] 
+                bg-[#182431] 
                 border border-gray-500 
                 outline-none
               "
@@ -345,7 +345,7 @@ function RealSwapPage() {
                 pl-2 md:pl-10  /* Minimal padding on mobile, more on desktop */
                 pr-8 
                 rounded 
-                bg-[#29304e] 
+                bg-[#182431] 
                 border border-gray-500 
                 outline-none
               "
@@ -379,7 +379,7 @@ function RealSwapPage() {
         <button
           onClick={doSwap}
           disabled={loading}
-          className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white p-3 rounded font-semibold w-full"
+          className="bg-gradient-to-r from-[#3298ad] to-[#004aad] text-white p-3 rounded font-semibold w-full"
         >
           {loading ? "Swapping..." : "Swap Now"}
         </button>

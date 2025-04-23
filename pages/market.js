@@ -18,19 +18,14 @@ import {
 } from "@solana/spl-token";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import axios from "axios";
-
-// --- MPL Token Metadata Imports ---
 import {
   createV1,
   mplTokenMetadata,
   TokenStandard,
 } from "@metaplex-foundation/mpl-token-metadata";
-
-// --- Umi & Bundle Imports ---
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { signerIdentity, percentAmount } from "@metaplex-foundation/umi";
 
-// Dynamically load the wallet button
 const WalletMultiButtonDynamic = dynamic(
   () =>
     import("@solana/wallet-adapter-react-ui").then(
@@ -39,69 +34,43 @@ const WalletMultiButtonDynamic = dynamic(
   { ssr: false }
 );
 
-/* -----------------------------------------------
-   Helper Functions
------------------------------------------------ */
-
 function sanitizeFileName(fileName) {
   return fileName.replace(/\s+/g, "_");
 }
-
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => {
-      const base64 = reader.result.split(",")[1];
-      resolve(base64);
+      resolve(reader.result.split(",")[1]);
     };
-    reader.onerror = (error) => {
-      reject(error);
-    };
+    reader.onerror = reject;
   });
 }
-
 async function uploadFileToPinata(file) {
-  try {
-    const base64Data = await fileToBase64(file);
-    const payload = {
-      fileName: sanitizeFileName(file.name),
-      fileData: base64Data,
-      fileType: file.type,
-    };
-    const response = await axios.post("/api/pinFile", payload);
-    const cid = response.data.cid;
-    if (!cid) throw new Error("CID not returned from API");
-    return "https://ivory-wonderful-dog-322.mypinata.cloud/ipfs/" + cid;
-  } catch (error) {
-    throw error;
-  }
+  const base64Data = await fileToBase64(file);
+  const resp = await axios.post("/api/pinFile", {
+    fileName: sanitizeFileName(file.name),
+    fileData: base64Data,
+    fileType: file.type,
+  });
+  if (!resp.data.cid) throw new Error("CID not returned");
+  return "https://ivory-wonderful-dog-322.mypinata.cloud/ipfs/" + resp.data.cid;
 }
-
 async function confirmTransactionPolling(connection, signature, timeout = 120000) {
   const start = Date.now();
   while (Date.now() - start < timeout) {
-    const statuses = await connection.getSignatureStatuses([signature]);
-    const status = statuses.value[0];
-    if (status && status.confirmationStatus === "finalized") {
-      return status;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const { value } = await connection.getSignatureStatuses([signature]);
+    if (value[0]?.confirmationStatus === "finalized") return value[0];
+    await new Promise((r) => setTimeout(r, 1000));
   }
-  throw new Error("Transaction not confirmed within timeout");
+  throw new Error("Transaction not confirmed");
 }
 
-/* -----------------------------------------------
-   Main Component
------------------------------------------------ */
-
 function MarketPage() {
-  const walletAdapter = useWallet();
-  const { publicKey, sendTransaction, signTransaction } = walletAdapter;
+  const { publicKey, sendTransaction, signTransaction } = useWallet();
   const { connection } = useConnection();
-
   const userPubkey = publicKey ? new PublicKey(publicKey.toBase58()) : null;
-  console.log("Wallet Public Key:", userPubkey ? userPubkey.toBase58() : "Undefined");
 
   const [mintedTokens, setMintedTokens] = useState([]);
   const [isMinting, setIsMinting] = useState(false);
@@ -113,28 +82,9 @@ function MarketPage() {
   const logoFileInputRef = useRef(null);
 
   const fetchMintedTokens = useCallback(async () => {
-    // Dummy data for demonstration.
     setMintedTokens([
-      {
-        id: 1,
-        mint: "DummyMintAddress1",
-        ticker: "ABC",
-        tokenName: "Alpha Beta Coin",
-        supply: "1000000000",
-        audioFileName: "example.mp3",
-        logoFileName: "logo1.png",
-        mintedBy: "ExampleWalletAddress",
-      },
-      {
-        id: 2,
-        mint: "DummyMintAddress2",
-        ticker: "XYZ",
-        tokenName: "Xylophone Token",
-        supply: "1000000000",
-        audioFileName: "",
-        logoFileName: "",
-        mintedBy: "ExampleWalletAddress",
-      },
+      { id: 1, mint: "DummyMintAddress1", ticker: "ABC", tokenName: "Alpha Beta Coin", supply: "1000000000", audioFileName: "example.mp3", logoFileName: "logo1.png", mintedBy: "ExampleWalletAddress" },
+      { id: 2, mint: "DummyMintAddress2", ticker: "XYZ", tokenName: "Xylophone Token", supply: "1000000000", audioFileName: "", logoFileName: "", mintedBy: "ExampleWalletAddress" },
     ]);
   }, []);
 
@@ -142,22 +92,12 @@ function MarketPage() {
     fetchMintedTokens();
   }, [fetchMintedTokens]);
 
-  // Marketplace: Filter tokens minted by the connected wallet.
   const approvedTokens = mintedTokens.filter(
-    (token) => token.mintedBy === (userPubkey ? userPubkey.toBase58() : "")
+    (t) => t.mintedBy === userPubkey?.toBase58()
   );
 
-  const handleChooseAudioFile = () => {
-    if (audioFileInputRef.current) {
-      audioFileInputRef.current.click();
-    }
-  };
-
-  const handleChooseLogoFile = () => {
-    if (logoFileInputRef.current) {
-      logoFileInputRef.current.click();
-    }
-  };
+  const handleChooseAudioFile = () => audioFileInputRef.current?.click();
+  const handleChooseLogoFile = () => logoFileInputRef.current?.click();
 
   const handleMint = async () => {
     if (!userPubkey) {
@@ -167,65 +107,38 @@ function MarketPage() {
     const finalTicker = ticker || "DEFAULT";
     const finalTokenName = tokenName || "Default Artist";
     const supplyInput = "1000000000";
-    const tokenSupply = parseFloat(supplyInput);
-    if (isNaN(tokenSupply)) {
+    if (isNaN(parseFloat(supplyInput))) {
       alert("Invalid supply value.");
       return;
     }
     setIsMinting(true);
 
-    // 1. Upload off-chain files to Pinata.
-    let logoUrl = "";
-    let audioUrl = "";
+    let logoUrl = "", audioUrl = "";
     try {
-      if (logoFile) {
-        console.log("Uploading logo file:", logoFile.name);
-        logoUrl = await uploadFileToPinata(logoFile);
-        console.log("Logo uploaded with URL:", logoUrl);
-      }
-      if (audioFile) {
-        console.log("Uploading audio file:", audioFile.name);
-        audioUrl = await uploadFileToPinata(audioFile);
-        console.log("Audio uploaded with URL:", audioUrl);
-      }
+      if (logoFile) logoUrl = await uploadFileToPinata(logoFile);
+      if (audioFile) audioUrl = await uploadFileToPinata(audioFile);
     } catch {
-      alert("File upload failed. Check the console for details.");
+      alert("File upload failed.");
       setIsMinting(false);
       return;
     }
 
-    // 2. Create metadata JSON and upload it.
-    const metadataJSON = {
-      name: finalTokenName,
-      symbol: finalTicker,
-      image: logoUrl || "",
-      audio: audioUrl || "",
-    };
-
+    const metadataJSON = { name: finalTokenName, symbol: finalTicker, image: logoUrl, audio: audioUrl };
     let metadataUrl = "";
     try {
       const blob = new Blob([JSON.stringify(metadataJSON)], { type: "application/json" });
-      const metadataFile = new File([blob], "metadata.json", { type: "application/json" });
-      metadataUrl = await uploadFileToPinata(metadataFile);
-      console.log("Metadata uploaded with URL:", metadataUrl);
+      const file = new File([blob], "metadata.json", { type: "application/json" });
+      metadataUrl = await uploadFileToPinata(file);
     } catch {
-      alert("Metadata upload failed. Check the console for details.");
+      alert("Metadata upload failed.");
       setIsMinting(false);
       return;
     }
 
-    console.log("Public Key (for metadata):", userPubkey.toBase58());
-    console.log("Metadata URI (on-chain):", metadataUrl);
-
-    // 3. Create the mint account transaction (client‑side).
     let mintKeypair;
     try {
       mintKeypair = Keypair.generate();
-      console.log("Generated mint keypair:", mintKeypair.publicKey.toBase58());
-
       const mintTx = new Transaction();
-
-      // Create the mint account.
       const lamports = await connection.getMinimumBalanceForRentExemption(MintLayout.span);
       mintTx.add(
         SystemProgram.createAccount({
@@ -236,128 +149,88 @@ function MarketPage() {
           programId: TOKEN_PROGRAM_ID,
         })
       );
-
-      // Initialize the mint.
-      const decimals = 9;
       mintTx.add(
         createInitializeMintInstruction(
           mintKeypair.publicKey,
-          decimals,
+          9,
           userPubkey,
           userPubkey
         )
       );
-
-      // Create the associated token account (ATA) for the user.
-      const associatedTokenAddress = await getAssociatedTokenAddress(
-        mintKeypair.publicKey,
-        userPubkey
-      );
+      const ata = await getAssociatedTokenAddress(mintKeypair.publicKey, userPubkey);
       mintTx.add(
         createAssociatedTokenAccountInstruction(
           userPubkey,
-          associatedTokenAddress,
+          ata,
           userPubkey,
           mintKeypair.publicKey
         )
       );
-
-      // Mint tokens.
-      const amountToMint = 1000000000 * Math.pow(10, decimals);
       mintTx.add(
         createMintToInstruction(
           mintKeypair.publicKey,
-          associatedTokenAddress,
+          ata,
           userPubkey,
-          amountToMint
+          1000000000 * 10 ** 9
         )
       );
-
       mintTx.feePayer = userPubkey;
       const { blockhash } = await connection.getLatestBlockhash();
       mintTx.recentBlockhash = blockhash;
-
-      // Partial-sign the transaction with the mint keypair.
       mintTx.partialSign(mintKeypair);
-
-      // Let the user's wallet sign and send the transaction.
-      const mintTxid = await sendTransaction(mintTx, connection);
-      console.log("Mint transaction sent, signature:", mintTxid);
-      await confirmTransactionPolling(connection, mintTxid, 120000);
-      console.log("Mint confirmed, txid:", mintTxid);
+      const txid = await sendTransaction(mintTx, connection);
+      await confirmTransactionPolling(connection, txid);
     } catch {
-      console.error("Mint creation error");
-      alert("Mint creation failed. Check the console for details.");
+      alert("Mint creation failed.");
       setIsMinting(false);
       return;
     }
 
-    // 4. Create on-chain metadata using Metaplex's createV1 helper.
-    let metadataTxSig = "";
     try {
-      const umi = createUmi(
-        "https://clean-solemn-waterfall.solana-mainnet.quiknode.pro/d2863d9fc3dbb4c48f523ff357b6defe31eae786"
-      ).use(mplTokenMetadata());
-
-      umi.use(
-        signerIdentity({
-          publicKey: new PublicKey(userPubkey.toBase58()),
-          signTransaction: async (tx) => await signTransaction(tx),
-        })
-      );
-
+      const umi = createUmi("https://clean-solemn-waterfall.solana-mainnet.quiknode.pro/...").use(mplTokenMetadata());
+      umi.use(signerIdentity({ publicKey: userPubkey, signTransaction }));
       const builder = createV1(umi, {
         mint: mintKeypair.publicKey,
-        authority: new PublicKey(userPubkey.toBase58()),
-        payer: new PublicKey(userPubkey.toBase58()),
-        updateAuthority: new PublicKey(userPubkey.toBase58()),
+        authority: userPubkey,
+        payer: userPubkey,
+        updateAuthority: userPubkey,
         name: finalTokenName,
         symbol: finalTicker,
         uri: metadataUrl,
         sellerFeeBasisPoints: percentAmount(5.5),
         tokenStandard: TokenStandard.Fungible,
       });
-
-      let instructions = builder.getInstructions();
-      instructions = instructions.map((instr) => ({
-        ...instr,
-        keys: instr.keys.map((k) => {
-          if (typeof k.pubkey === "string") {
-            return { ...k, pubkey: new PublicKey(k.pubkey) };
-          }
-          return k;
-        }),
+      const instrs = builder.getInstructions().map((i) => ({
+        ...i,
+        keys: i.keys.map((k) =>
+          typeof k.pubkey === "string" ? { ...k, pubkey: new PublicKey(k.pubkey) } : k
+        ),
       }));
-
-      const metadataTx = new Transaction().add(...instructions);
-      metadataTx.feePayer = userPubkey;
-      const { blockhash: metaBlockhash } = await connection.getLatestBlockhash();
-      metadataTx.recentBlockhash = metaBlockhash;
-
-      metadataTxSig = await sendTransaction(metadataTx, connection);
-      console.log(
-        `Metadata added. Tx: https://explorer.solana.com/tx/${metadataTxSig}?cluster=mainnet`
-      );
+      const metaTx = new Transaction().add(...instrs);
+      metaTx.feePayer = userPubkey;
+      const { blockhash: mb } = await connection.getLatestBlockhash();
+      metaTx.recentBlockhash = mb;
+      await sendTransaction(metaTx, connection);
     } catch {
-      console.error("On-chain metadata creation failed");
-      alert("On-chain metadata creation failed. Check the console for details.");
+      alert("On-chain metadata creation failed.");
       setIsMinting(false);
       return;
     }
 
-    const newToken = {
-      id: mintedTokens.length + 1,
-      mint: mintKeypair.publicKey.toBase58(),
-      ticker: finalTicker,
-      tokenName: finalTokenName,
-      supply: supplyInput,
-      audioFileName: audioFile ? audioFile.name : "",
-      logoFileName: logoFile ? logoFile.name : "",
-      mintedBy: userPubkey.toBase58(),
-      metadataUri: metadataUrl,
-      txSignature: metadataTxSig,
-    };
-    setMintedTokens((prev) => [...prev, newToken]);
+    setMintedTokens((prev) => [
+      ...prev,
+      {
+        id: prev.length + 1,
+        mint: mintKeypair.publicKey.toBase58(),
+        ticker: finalTicker,
+        tokenName: finalTokenName,
+        supply: supplyInput,
+        audioFileName: audioFile?.name || "",
+        logoFileName: logoFile?.name || "",
+        mintedBy: userPubkey.toBase58(),
+        metadataUri: metadataUrl,
+      },
+    ]);
     setTicker("");
     setTokenName("");
     setAudioFile(null);
@@ -368,13 +241,12 @@ function MarketPage() {
   return (
     <div className="max-w-[400px] w-full mx-auto my-8 px-4 text-white">
       {/* Create Token Card */}
-      <div className="bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
+      <div className="bg-[#141e2a] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
         <h2 className="text-2xl font-bold mb-4">Create Token</h2>
         <div className="mb-4">
           <WalletMultiButtonDynamic />
         </div>
         <div className="space-y-4 mb-4 w-full">
-          {/* Input for Song (Ticker) */}
           <div className="flex flex-col">
             <label className="text-left w-full font-semibold mb-1">Song</label>
             <input
@@ -382,10 +254,9 @@ function MarketPage() {
               placeholder="Ticker"
               value={ticker}
               onChange={(e) => setTicker(e.target.value)}
-              className="w-full h-[48px] px-3 rounded bg-[#29304e] border border-gray-500 placeholder-gray-400 text-white focus:outline-none"
+              className="w-full h-[48px] px-3 rounded bg-[#1f2a3a] border border-gray-500 placeholder-gray-400 text-white focus:outline-none"
             />
           </div>
-          {/* Input for Artist (Name) */}
           <div className="flex flex-col">
             <label className="text-left w-full font-semibold mb-1">Artist</label>
             <input
@@ -393,61 +264,53 @@ function MarketPage() {
               placeholder="Name"
               value={tokenName}
               onChange={(e) => setTokenName(e.target.value)}
-              className="w-full h-[48px] px-3 rounded bg-[#29304e] border border-gray-500 placeholder-gray-400 text-white focus:outline-none"
+              className="w-full h-[48px] px-3 rounded bg-[#1f2a3a] border border-gray-500 placeholder-gray-400 text-white focus:outline-none"
             />
           </div>
-          {/* Section for Token Logo */}
           <div className="flex flex-col">
             <label className="text-white font-semibold mb-1 text-center">Token Logo</label>
             <input
               type="file"
               accept="image/*"
               ref={logoFileInputRef}
-              onChange={(e) =>
-                setLogoFile(e.target.files ? e.target.files[0] : null)
-              }
+              onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
               className="hidden"
             />
             <button
-              type="button"
               onClick={handleChooseLogoFile}
-              className="block mx-auto bg-[#1c243e] border border-gray-500 text-white text-sm py-1 px-2 rounded-full font-semibold whitespace-nowrap mb-1"
+              className="block mx-auto bg-[#141e2a] border border-gray-500 text-white text-sm py-1 px-2 rounded-full font-semibold whitespace-nowrap mb-1"
             >
-              {logoFile ? logoFile.name : "Choose Logo"}
+              {logoFile?.name || "Choose Logo"}
             </button>
           </div>
-          {/* Section for Audio Media */}
           <div className="flex flex-col">
             <label className="text-white font-semibold mb-1 text-center">Audio Media</label>
             <input
               type="file"
               accept="audio/*"
               ref={audioFileInputRef}
-              onChange={(e) =>
-                setAudioFile(e.target.files ? e.target.files[0] : null)
-              }
+              onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
               className="hidden"
             />
             <button
-              type="button"
               onClick={handleChooseAudioFile}
-              className="block mx-auto bg-[#1c243e] border border-gray-500 text-white text-sm py-1 px-2 rounded-full font-semibold whitespace-nowrap mb-1"
+              className="block mx-auto bg-[#141e2a] border border-gray-500 text-white text-sm py-1 px-2 rounded-full font-semibold whitespace-nowrap mb-1"
             >
-              {audioFile ? audioFile.name : "Choose Audio"}
+              {audioFile?.name || "Choose Audio"}
             </button>
           </div>
         </div>
         <button
           onClick={handleMint}
           disabled={isMinting}
-          className="w-full p-3 rounded font-semibold bg-gradient-to-r from-purple-500 to-indigo-600"
+          className="w-full p-3 rounded font-semibold bg-gradient-to-r from-[#3298ad] to-[#004aad]"
         >
           {isMinting ? "Minting..." : "Mint Now"}
         </button>
       </div>
 
       {/* Marketplace Card */}
-      <div className="mt-8 bg-[#1c243e] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
+      <div className="mt-8 bg-[#141e2a] rounded-2xl pt-6 px-6 pb-8 flex flex-col text-center">
         <h2 className="text-2xl font-bold mb-4 text-center">Marketplace</h2>
         {approvedTokens.length === 0 ? (
           <p className="text-gray-400 text-center">No approved tokens minted yet.</p>

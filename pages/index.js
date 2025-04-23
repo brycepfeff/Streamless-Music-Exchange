@@ -45,8 +45,8 @@ export default function HomePage() {
 
         {/* Subtitle */}
         <p className="mt-4 text-lg md:text-xl text-white text-center">
-          <span className="block md:inline">Fair artist compensation.</span>{' '}
-          <span className="block md:inline">Affordable consumer access.</span>
+          <span className="block md:inline">Superior artist compensation.</span>{' '}
+          <span className="block md:inline">Cheaper listener access.</span>
         </p>
 
         {/*
@@ -58,7 +58,7 @@ export default function HomePage() {
           <Link
             href="/listen"
             className="
-              bg-gradient-to-r from-purple-500 to-indigo-600
+              bg-gradient-to-r from-[#3298ad] to-[#004aad]
               text-white
               px-6 py-3
               rounded-xl font-semibold
@@ -72,7 +72,7 @@ export default function HomePage() {
           <Link
             href="/market"
             className="
-              bg-gradient-to-r from-purple-500 to-indigo-600
+              bg-gradient-to-r from-[#3298ad] to-[#004aad]
               text-white
               px-6 py-3
               rounded-xl font-semibold
@@ -86,7 +86,7 @@ export default function HomePage() {
           <Link
             href="/swap"
             className="
-              bg-gradient-to-r from-purple-500 to-indigo-600
+              bg-gradient-to-r from-[#3298ad] to-[#004aad]
               text-white
               px-6 py-3
               rounded-xl font-semibold

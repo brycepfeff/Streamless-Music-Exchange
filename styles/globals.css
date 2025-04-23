@@ -11,14 +11,14 @@
 =================================== */
 :root {
   /* Primary gradient (purple to indigo) for CTAs */
-  --gradient-start: #9f7aea; /* roughly purple-500 */
-  --gradient-end:   #5a67d8; /* roughly indigo-600 */
+  --gradient-start: #007bff; /* roughly purple-500 */
+  --gradient-end:   #004aad; /* roughly indigo-600 */
 
   /* Background color: adjust for a subtle lavender or keep #fff */
-  --site-bg: #080c1b; /* example soft lavender background */
+  --site-bg: #041320; /* example soft lavender background */
 
   /* Nav bar color: a deeper purple or slate. Adjust as you like. */
-  --nav-bg: #2f2b3d;
+  --nav-bg: #141E2A;
 
   /* Text colors. Usually white on dark nav, black or dark on light BG. */
   --text-on-nav: #ffffff;
