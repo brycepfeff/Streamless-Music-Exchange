@@ -11,7 +11,7 @@
 =================================== */
 :root {
   /* Primary gradient (purple to indigo) for CTAs */
-  --gradient-start: #007bff; /* roughly purple-500 */
+  --gradient-start: #3298ad; /* roughly purple-500 */
   --gradient-end:   #004aad; /* roughly indigo-600 */
 
   /* Background color: adjust for a subtle lavender or keep #fff */
